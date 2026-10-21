@@ -1,0 +1,53 @@
+name: smartnest_mobile
+description: "SmartNest Multi-Platform Property & Hostel Management Mobile Application"
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State Management
+  provider: ^6.1.2
+
+  # Networking & Serialization
+  dio: ^5.4.1
+  http_parser: ^4.0.2
+
+  # Local Storage & Security
+  flutter_secure_storage: ^9.0.0
+  shared_preferences: ^2.2.2
+
+  # UI & Design
+  google_fonts: ^6.1.0
+  intl: ^0.19.0
+  flutter_svg: ^2.0.10+1
+  cached_network_image: ^3.3.1
+  shimmer: ^3.0.0
+  fl_chart: ^0.66.2
+
+  # Device & Media Utilities
+  image_picker: ^1.0.7
+  path_provider: ^2.1.2
+  url_launcher: ^6.2.5
+  file_picker: ^8.0.0
+
+  # Icons
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
