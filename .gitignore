@@ -24,3 +24,9 @@ Thumbs.db
 /scratch/
 /mobile/.dart_tool/
 /mobile/build/
+/mobile/android/build/
+/mobile/android/.gradle/
+/mobile/android/app/build/
+*.apk
+*.zip
+

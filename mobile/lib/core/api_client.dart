@@ -51,7 +51,30 @@ class ApiClient {
 
   // Custom baseUrl setter for development/testing
   void setBaseUrl(String url) {
-    _dio.options.baseUrl = url;
+    final cleanUrl = url.trim().replaceAll(RegExp(r'/+$'), '');
+    AppConstants.setBaseUrl(cleanUrl);
+    _dio.options.baseUrl = cleanUrl;
+  }
+
+  // API connectivity test against /ping
+  Future<bool> checkHealth([String? targetUrl]) async {
+    try {
+      final url = targetUrl != null ? targetUrl.trim().replaceAll(RegExp(r'/+$'), '') : _dio.options.baseUrl;
+      final testDio = Dio(
+        BaseOptions(
+          baseUrl: url,
+          connectTimeout: const Duration(seconds: 6),
+          receiveTimeout: const Duration(seconds: 6),
+          headers: {'Accept': 'application/json'},
+        ),
+      );
+      final response = await testDio.get('/ping');
+      return response.statusCode == 200 &&
+          response.data is Map &&
+          response.data['success'] == true;
+    } catch (_) {
+      return false;
+    }
   }
 
   // GET Request
@@ -180,14 +203,19 @@ class ApiClient {
   AppException _handleDioError(DioException error) {
     if (error.type == DioExceptionType.connectionTimeout ||
         error.type == DioExceptionType.receiveTimeout ||
-        error.type == DioExceptionType.sendTimeout ||
-        error.type == DioExceptionType.connectionError) {
-      return NetworkException();
+        error.type == DioExceptionType.sendTimeout) {
+      return NetworkException('Connection timed out. The server took too long to respond. Please verify your connection.');
+    }
+    if (error.type == DioExceptionType.badCertificate) {
+      return NetworkException('SSL Certificate validation error. Please verify the server HTTPS certificate.');
+    }
+    if (error.type == DioExceptionType.connectionError) {
+      return NetworkException('Unable to reach server at ${AppConstants.baseUrl}. Please check server availability or internet connection.');
     }
 
     final response = error.response;
     if (response == null) {
-      return NetworkException(error.message ?? 'Network error occurred');
+      return NetworkException(error.message ?? 'Network error connecting to ${AppConstants.baseUrl}');
     }
 
     final statusCode = response.statusCode ?? 500;
@@ -207,10 +235,14 @@ class ApiClient {
       case 403:
         return ForbiddenException(message);
       case 404:
-        return NotFoundException(message);
+        return NotFoundException(message != 'An unexpected error occurred' ? message : 'The requested resource was not found (404).');
       case 422:
         return ValidationException(message, errors: errors);
       case 500:
+      case 502:
+      case 503:
+      case 504:
+        return ServerException(message != 'An unexpected error occurred' ? message : 'Server error ($statusCode). Please try again later.');
       default:
         return ServerException(message);
     }

@@ -52,6 +52,19 @@ class StorageService {
     return prefs.getString(AppConstants.roleKey);
   }
 
+  // Server API URL Configuration
+  static const String serverUrlKey = 'smartnest_custom_server_url';
+
+  Future<void> saveServerUrl(String url) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(serverUrlKey, url.trim());
+  }
+
+  Future<String?> getServerUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(serverUrlKey);
+  }
+
   // Clear all session data
   Future<void> clearSession() async {
     await deleteToken();

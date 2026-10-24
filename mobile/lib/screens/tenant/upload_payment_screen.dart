@@ -121,7 +121,6 @@ class _UploadPaymentScreenState extends State<UploadPaymentScreen> {
   @override
   Widget build(BuildContext context) {
     final prov = Provider.of<TenantProvider>(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(

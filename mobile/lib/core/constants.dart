@@ -1,13 +1,32 @@
 import 'package:flutter/foundation.dart';
 
 class AppConstants {
-  // Base URLs - Automatically adapts for Android Emulator (10.0.2.2) vs iOS Simulator/Web/Physical devices
+  // Environment & Base URL Configuration
+  static const String envApiUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+  static const String defaultLocalIp = '192.168.1.145';
+  static const String defaultProdUrl = 'https://www.reliancehomes.co.tz/api/v1';
+
+  static String _activeBaseUrl = '';
+
   static String get baseUrl {
+    if (_activeBaseUrl.isNotEmpty) {
+      return _activeBaseUrl;
+    }
+    if (envApiUrl.isNotEmpty) {
+      return envApiUrl;
+    }
+    if (kReleaseMode) {
+      return defaultProdUrl;
+    }
     if (kIsWeb) {
       return 'http://localhost/apartments/public/api/v1';
     }
-    // Default emulator or local dev host (can be overridden via environment or settings)
-    return 'http://10.0.2.2/apartments/public/api/v1';
+    // Default development host (local Wi-Fi address reachable from physical phones & emulator)
+    return 'http://$defaultLocalIp/apartments/public/api/v1';
+  }
+
+  static void setBaseUrl(String url) {
+    _activeBaseUrl = url.trim().replaceAll(RegExp(r'/+$'), '');
   }
 
   static const String appName = 'SmartNest';

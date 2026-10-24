@@ -5,7 +5,6 @@ import '../../app/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/owner_provider.dart';
 import '../../widgets/app_drawer.dart';
-import '../../widgets/price_card.dart';
 import '../../widgets/stat_card.dart';
 
 class OwnerDashboardScreen extends StatefulWidget {

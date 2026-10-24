@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../app/theme.dart';
-import '../../models/property_model.dart';
 import '../../providers/owner_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/price_card.dart';
