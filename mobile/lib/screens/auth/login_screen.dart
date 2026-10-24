@@ -381,7 +381,27 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
+
+                  // Guest Browsing option
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.textMainLight,
+                      side: const BorderSide(color: AppTheme.borderLight),
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      backgroundColor: Colors.white,
+                    ),
+                    icon: const Icon(Icons.explore_outlined, size: 18, color: AppTheme.primary),
+                    label: Text(
+                      'Browse Accommodations as Guest',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13.5),
+                    ),
+                    onPressed: () {
+                      Navigator.pushReplacementNamed(context, '/marketplace');
+                    },
+                  ),
+                  const SizedBox(height: 24),
 
                   // Register link
                   Row(

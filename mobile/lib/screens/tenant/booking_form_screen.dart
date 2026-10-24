@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../app/theme.dart';
 import '../../models/property_model.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/tenant_provider.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_text_field.dart';
@@ -20,6 +21,17 @@ class BookingFormScreen extends StatefulWidget {
 
 class _BookingFormScreenState extends State<BookingFormScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (!auth.isAuthenticated || auth.currentUser == null) {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+    });
+  }
 
   int? _selectedRoomId;
   int? _selectedBedId;
