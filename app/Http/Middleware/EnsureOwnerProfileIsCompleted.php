@@ -17,12 +17,16 @@ class EnsureOwnerProfileIsCompleted
 
         if ($user && $user->isOwner()) {
             $route = $request->route();
-            if ($route && in_array($route->getName(), [
+            if ($route && (in_array($route->getName(), [
                 'owner.onboarding',
                 'owner.onboarding.save-draft',
                 'owner.onboarding.submit',
+                'owner.subscription',
+                'owner.subscription.subscribe',
+                'owner.subscription.submit-payment',
+                'owner.subscription.cancel',
                 'logout'
-            ])) {
+            ]) || str_starts_with($route->getName() ?? '', 'owner.subscription'))) {
                 return $next($request);
             }
 

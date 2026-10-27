@@ -88,6 +88,14 @@
                     <i data-lucide="sparkles" class="w-4 h-4"></i>
                     <span>Amenities Manager</span>
                 </a>
+                <a href="{{ route('admin.subscriptions') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-xl transition-all {{ request()->routeIs('admin.subscriptions*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                    <i data-lucide="credit-card" class="w-4 h-4"></i>
+                    <span>SaaS Subscriptions</span>
+                </a>
+                <a href="{{ route('admin.promotions') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-xl transition-all {{ request()->routeIs('admin.promotions*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                    <i data-lucide="zap" class="w-4 h-4"></i>
+                    <span>Featured Promotions</span>
+                </a>
                 <a href="{{ route('admin.reports') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-xl transition-all {{ request()->routeIs('admin.reports*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
                     <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
                     <span>Reports & Analytics</span>
@@ -97,6 +105,10 @@
             <!-- PROPERTY OWNER & AGENT Links -->
             @if(auth()->user()->isOwner() || auth()->user()->isAgent())
                 <div class="pt-4 pb-2 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Property Operations</div>
+                <a href="{{ route('owner.subscription') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-xl transition-all {{ request()->routeIs('owner.subscription*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                    <i data-lucide="crown" class="w-4 h-4"></i>
+                    <span>Subscription & Plan</span>
+                </a>
                 <a href="{{ route('owner.properties') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-xl transition-all {{ request()->routeIs('owner.properties*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
                     <i data-lucide="building" class="w-4 h-4"></i>
                     <span>My Properties</span>

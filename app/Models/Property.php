@@ -11,6 +11,7 @@ class Property extends Model
 
     protected $fillable = [
         'owner_id',
+        'organization_id',
         'property_name',
         'property_type_id',
         'description',
@@ -32,6 +33,11 @@ class Property extends Model
         'billing_period',
     ];
 
+    protected $casts = [
+        'is_featured' => 'boolean',
+        'price' => 'decimal:2',
+    ];
+
     // Scopes
     public function scopePublished($query)
     {
@@ -45,7 +51,48 @@ class Property extends Model
 
     public function scopeFeatured($query)
     {
-        return $query->where('is_featured', true);
+        return $query->where(function ($q) {
+            $q->where('is_featured', true)
+              ->orWhereHas('featuredPromotions', function ($pq) {
+                  $pq->where('status', 'active')
+                     ->where('starts_at', '<=', now())
+                     ->where('expires_at', '>=', now());
+              });
+        });
+    }
+
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    public function featuredPromotions()
+    {
+        return $this->hasMany(FeaturedPromotion::class);
+    }
+
+    /**
+     * Consistent Unit-Counting Rule for this Property:
+     * - entire_property: 1 unit
+     * - per_room / per_unit: room count
+     * - per_bed: bed count
+     * - mixed: max of room count and bed count (minimum 1)
+     */
+    public function getCalculatedUnitsCountAttribute(): int
+    {
+        if ($this->rent_structure === 'entire_property') {
+            return 1;
+        }
+        if ($this->rent_structure === 'per_bed') {
+            return $this->beds()->count();
+        }
+        if ($this->rent_structure === 'per_room' || $this->rent_structure === 'per_unit') {
+            return $this->rooms()->count();
+        }
+        // mixed
+        $rooms = $this->rooms()->count();
+        $beds = $this->beds()->count();
+        return max($rooms, $beds, 1);
     }
 
     // Relationships

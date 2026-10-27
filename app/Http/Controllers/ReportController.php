@@ -41,7 +41,32 @@ class ReportController extends Controller
                 ];
             }
 
-            // Total Revenue
+            // Financials: Gross Rent vs Deposit Liabilities
+            $rentInvoiced = Payment::whereIn('property_id', $propertyIds)
+                ->where('payment_type', 'rent')
+                ->sum('amount');
+
+            $rentCollected = Payment::whereIn('property_id', $propertyIds)
+                ->where('payment_type', 'rent')
+                ->where('status', 'paid')
+                ->sum('amount');
+
+            $outstandingRent = Payment::whereIn('property_id', $propertyIds)
+                ->where('payment_type', 'rent')
+                ->whereIn('status', ['pending', 'overdue'])
+                ->sum('amount');
+
+            $contractIds = Contract::whereIn('property_id', $propertyIds)->pluck('id')->toArray();
+            $grossDeposits = Payment::whereIn('property_id', $propertyIds)
+                ->where('payment_type', 'deposit')
+                ->where('status', 'paid')
+                ->sum('amount');
+
+            $damageCharges = !empty($contractIds) ? (float) \App\Models\CheckOut::whereIn('contract_id', $contractIds)->sum('damage_charges') : 0.00;
+            $depositRefunds = !empty($contractIds) ? (float) \App\Models\CheckOut::whereIn('contract_id', $contractIds)->sum('deposit_refunded') : 0.00;
+            $depositsHeld = max(0, $grossDeposits - ($damageCharges + $depositRefunds));
+
+            // Total Revenue across all categories
             $totalRevenue = Payment::whereIn('property_id', $propertyIds)
                 ->where('status', 'paid')
                 ->sum('amount');
@@ -101,6 +126,12 @@ class ReportController extends Controller
 
             return [
                 'total_revenue' => $totalRevenue,
+                'rent_invoiced' => $rentInvoiced,
+                'rent_collected' => $rentCollected,
+                'outstanding_rent' => $outstandingRent,
+                'deposits_held' => $depositsHeld,
+                'damage_deductions' => $damageCharges,
+                'deposit_refunds' => $depositRefunds,
                 'outstanding_balance' => $outstanding,
                 'occupancy_rate' => $occupancyRate,
                 'total_rooms' => $totalRooms,
@@ -123,8 +154,12 @@ class ReportController extends Controller
     public function adminReports()
     {
         $data = Cache::remember('admin_reports', 600, function () {
-            // System total revenue
-            $totalRevenue = Payment::where('status', 'paid')->sum('amount');
+            // Platform SaaS Revenue (distinct from tenant payments)
+            $totalSaasRevenue = \App\Models\SubscriptionInvoice::where('status', 'paid')->sum('amount');
+            $activeSubscriptions = \App\Models\Subscription::where('status', 'active')->count();
+
+            // System tenant marketplace rental volume
+            $totalTenantPayments = Payment::where('status', 'paid')->sum('amount');
             $outstanding = Payment::whereIn('status', ['pending', 'overdue'])->sum('amount');
 
             // System total occupancy
@@ -154,7 +189,9 @@ class ReportController extends Controller
             $resolvedTickets = MaintenanceRequest::where('status', 'resolved')->count();
 
             return [
-                'total_revenue' => $totalRevenue,
+                'saas_subscription_revenue' => $totalSaasRevenue,
+                'active_saas_subscriptions' => $activeSubscriptions,
+                'total_revenue' => $totalTenantPayments,
                 'outstanding_balance' => $outstanding,
                 'occupancy_rate' => $occupancyRate,
                 'total_beds' => $totalBeds,

@@ -30,6 +30,7 @@ class User extends Authenticatable
         'whatsapp',
         'gender',
         'date_of_birth',
+        'organization_id',
         'avatar',
         'fcm_token',
     ];
@@ -105,6 +106,60 @@ class User extends Authenticatable
     }
 
     // Relationships
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    public function ownedOrganization()
+    {
+        return $this->hasOne(Organization::class, 'owner_user_id');
+    }
+
+    /**
+     * Resolve the active organization for this user (owned or member).
+     * Automatically creates a default portfolio organization if none exists for owners.
+     */
+    public function resolveOrganization(): Organization
+    {
+        if ($this->organization_id) {
+            $org = Organization::find($this->organization_id);
+            if ($org) {
+                return $org;
+            }
+        }
+
+        $owned = $this->ownedOrganization;
+        if ($owned) {
+            if (!$this->organization_id) {
+                $this->update(['organization_id' => $owned->id]);
+            }
+            return $owned;
+        }
+
+        // Auto-create default organization for property owner
+        $orgName = $this->name ? "{$this->name}'s Properties" : "Portfolio #{$this->id}";
+        $slug = \Illuminate\Support\Str::slug($orgName) . '-' . $this->id;
+
+        $org = Organization::create([
+            'owner_user_id' => $this->id,
+            'name' => $orgName,
+            'slug' => $slug,
+            'phone' => $this->phone,
+            'email' => $this->email,
+            'country' => 'Tanzania',
+        ]);
+
+        $this->update(['organization_id' => $org->id]);
+
+        // Link existing properties owned by this user
+        Property::where('owner_id', $this->id)
+            ->whereNull('organization_id')
+            ->update(['organization_id' => $org->id]);
+
+        return $org;
+    }
+
     public function tenantDetail()
     {
         return $this->hasOne(TenantDetail::class);

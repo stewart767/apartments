@@ -88,6 +88,7 @@ Route::prefix('v1')->group(function () {
 
     Route::get('/institutions', [InstitutionController::class, 'index']);
     Route::get('/amenities', [AmenityController::class, 'index']);
+    Route::get('/plans', [\App\Http\Controllers\Api\V1\Public\PlanController::class, 'index']);
 
     // 4. Authenticated Notifications
     Route::middleware('auth:sanctum')->prefix('notifications')->group(function () {
@@ -142,6 +143,8 @@ Route::prefix('v1')->group(function () {
     // 6. Owner Routes
     Route::middleware(['auth:sanctum', 'role:owner,agent'])->prefix('owner')->group(function () {
         Route::get('/dashboard', [OwnerDashboardController::class, 'index']);
+        Route::get('/subscription', [\App\Http\Controllers\Api\V1\Owner\SubscriptionController::class, 'show']);
+        Route::post('/subscription/subscribe', [\App\Http\Controllers\Api\V1\Owner\SubscriptionController::class, 'subscribe']);
 
         // Properties & Layout
         Route::get('/properties', [OwnerPropertyController::class, 'index']);

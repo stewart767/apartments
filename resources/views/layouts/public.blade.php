@@ -154,6 +154,9 @@
                     <span>Explore Stays</span>
                     <span class="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-bold">HOT</span>
                 </a>
+                <a href="{{ route('pricing') }}" class="text-sm font-semibold {{ request()->routeIs('pricing') ? 'text-indigo-600' : 'text-slate-600 hover:text-indigo-600' }} transition-colors">
+                    Pricing
+                </a>
                 <a href="{{ url('/how-it-works') }}" class="text-sm font-semibold {{ request()->is('how-it-works') ? 'text-indigo-600' : 'text-slate-600 hover:text-indigo-600' }} transition-colors">
                     How It Works
                 </a>
@@ -226,6 +229,9 @@
                 </a>
                 <a href="{{ url('/how-it-works') }}" class="flex items-center gap-2 p-3 text-sm font-semibold rounded-2xl text-slate-700 hover:bg-slate-50">
                     <i data-lucide="help-circle" class="w-4 h-4"></i> How It Works
+                </a>
+                <a href="{{ route('pricing') }}" class="flex items-center gap-2 p-3 text-sm font-semibold rounded-2xl {{ request()->routeIs('pricing') ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50' }}">
+                    <i data-lucide="tag" class="w-4 h-4"></i> Pricing
                 </a>
                 <a href="{{ url('/about') }}" class="flex items-center gap-2 p-3 text-sm font-semibold rounded-2xl text-slate-700 hover:bg-slate-50">
                     <i data-lucide="info" class="w-4 h-4"></i> About Us

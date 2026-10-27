@@ -3,7 +3,7 @@
 @section('title', 'My Properties')
 
 @section('content')
-<div class="px-4 sm:px-6 lg:px-8 py-8">
+<div class="px-4 sm:px-6 lg:px-8 py-8" x-data="{ promoteModalOpen: false, activePropertyId: null, activePropertyName: '' }">
     <!-- Header -->
     <div class="sm:flex sm:items-center sm:justify-between border-b border-slate-200 pb-6 mb-8">
         <div>
@@ -139,9 +139,14 @@
                     </div>
 
                     <!-- Footer actions -->
-                    <div class="p-6 pt-0 mt-4 border-t border-slate-50 flex items-center gap-3">
-                        <span class="text-xs text-slate-400">Listing Status: <span class="font-semibold text-slate-700 capitalize">{{ $property->status }}</span></span>
-                        <div class="ml-auto flex items-center gap-2">
+                    <div class="p-6 pt-0 mt-4 border-t border-slate-50 flex items-center justify-between gap-3">
+                        <button type="button" 
+                                @click="promoteModalOpen = true; activePropertyId = {{ $property->id }}; activePropertyName = '{{ addslashes($property->property_name) }}'"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all {{ $property->is_featured ? 'bg-amber-100 text-amber-800' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100' }}">
+                            <i data-lucide="zap" class="w-3.5 h-3.5 {{ $property->is_featured ? 'text-amber-600 fill-amber-500' : 'text-indigo-600' }}"></i>
+                            <span>{{ $property->is_featured ? 'Featured Stay' : 'Boost / Feature' }}</span>
+                        </button>
+                        <div class="flex items-center gap-2">
                             <a href="{{ route('owner.properties.edit', $property->id) }}" class="inline-flex items-center justify-center p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-50 transition-colors" title="Edit details">
                                 <i data-lucide="edit" class="w-4 h-4"></i>
                             </a>
@@ -151,5 +156,87 @@
             @endforeach
         </div>
     @endif
+
+    <!-- Feature Listing Modal -->
+    <div x-show="promoteModalOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative" @click.outside="promoteModalOpen = false">
+            <button type="button" @click="promoteModalOpen = false" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <div class="mb-5">
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                    Marketplace Boost
+                </span>
+                <h3 class="text-xl font-bold text-slate-900 mt-2">Feature: <span x-text="activePropertyName"></span></h3>
+                <p class="text-xs text-slate-500 mt-1">Get up to 4x more tenant views by placing your listing at the top of search results.</p>
+            </div>
+
+            <form :action="'/owner/properties/' + activePropertyId + '/promote'" method="POST" enctype="multipart/form-data" class="space-y-4">
+                @csrf
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Select Campaign Tier *</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center justify-between p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-indigo-600 transition-all">
+                            <div class="flex items-center gap-2">
+                                <input type="radio" name="tier" value="standard" checked class="text-indigo-600 focus:ring-indigo-500">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-900">Standard Boost (7 Days)</p>
+                                    <p class="text-[11px] text-slate-500">Top placement in city searches</p>
+                                </div>
+                            </div>
+                            <span class="text-xs font-black text-indigo-700">TSh 5,000</span>
+                        </label>
+
+                        <label class="flex items-center justify-between p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-indigo-600 transition-all">
+                            <div class="flex items-center gap-2">
+                                <input type="radio" name="tier" value="extended" class="text-indigo-600 focus:ring-indigo-500">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-900">Extended Spotlight (14 Days)</p>
+                                    <p class="text-[11px] text-slate-500">Homepage carousel + campus radius boost</p>
+                                </div>
+                            </div>
+                            <span class="text-xs font-black text-indigo-700">TSh 10,000</span>
+                        </label>
+
+                        <label class="flex items-center justify-between p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-indigo-600 transition-all">
+                            <div class="flex items-center gap-2">
+                                <input type="radio" name="tier" value="premium" class="text-indigo-600 focus:ring-indigo-500">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-900">Premium Campaign (30 Days)</p>
+                                    <p class="text-[11px] text-slate-500">Full month featured banner across Tanzania</p>
+                                </div>
+                            </div>
+                            <span class="text-xs font-black text-indigo-700">TSh 15,000</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 rounded-xl p-3 text-[11px] text-slate-600 border border-slate-200">
+                    <p class="font-bold text-slate-800">Send Payment to RelianceHomes:</p>
+                    <p>M-Pesa / TigoPesa / Airtel Money: <code>+255 712 345 678</code></p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Payment Reference Code *</label>
+                    <input type="text" name="payment_reference" required class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600" placeholder="e.g. QX981023">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Payment Slip / Screenshot</label>
+                    <input type="file" name="receipt" accept="image/*,.pdf" class="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button type="button" @click="promoteModalOpen = false" class="py-2 px-4 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+                        Cancel
+                    </button>
+                    <button type="submit" class="py-2 px-5 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 shadow-md shadow-indigo-200">
+                        Submit Promotion
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 @endsection

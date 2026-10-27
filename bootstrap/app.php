@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureUserHasRole::class,
             'owner.profile' => \App\Http\Middleware\EnsureOwnerProfileIsCompleted::class,
+            'subscription.limit' => \App\Http\Middleware\CheckSubscriptionLimits::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

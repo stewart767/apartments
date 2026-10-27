@@ -89,11 +89,24 @@ class DashboardController extends Controller
             if (empty($propertyIds)) {
                 return [
                     'total_properties' => 0,
+                    'total_buildings' => 0,
+                    'total_floors' => 0,
                     'occupancy_rate' => 0,
+                    'total_rooms' => 0,
                     'available_rooms' => 0,
+                    'occupied_rooms' => 0,
+                    'total_beds' => 0,
                     'available_beds' => 0,
+                    'occupied_beds' => 0,
                     'total_tenants' => 0,
                     'pending_applications' => 0,
+                    'rent_invoiced' => 0.00,
+                    'rent_collected' => 0.00,
+                    'outstanding_rent' => 0.00,
+                    'overdue_invoices_count' => 0,
+                    'deposits_held' => 0.00,
+                    'damage_deductions' => 0.00,
+                    'deposit_refunds' => 0.00,
                     'total_revenue' => 0.00,
                     'outstanding_payments' => 0.00,
                     'expiring_contracts' => 0,
@@ -101,8 +114,44 @@ class DashboardController extends Controller
                 ];
             }
 
-            // Total revenue
-            $revenue = Payment::whereIn('property_id', $propertyIds)
+            // Rent Invoiced & Collected (exclusively rent, separating deposits)
+            $rentInvoiced = Payment::whereIn('property_id', $propertyIds)
+                ->where('payment_type', 'rent')
+                ->sum('amount');
+
+            $rentCollected = Payment::whereIn('property_id', $propertyIds)
+                ->where('payment_type', 'rent')
+                ->where('status', 'paid')
+                ->sum('amount');
+
+            $outstandingRent = Payment::whereIn('property_id', $propertyIds)
+                ->where('payment_type', 'rent')
+                ->whereIn('status', ['pending', 'overdue'])
+                ->sum('amount');
+
+            $overdueInvoicesCount = Payment::whereIn('property_id', $propertyIds)
+                ->where(function($q) {
+                    $q->where('status', 'overdue')
+                      ->orWhere(function($sub) {
+                          $sub->where('status', 'pending')
+                              ->whereNotNull('due_date')
+                              ->where('due_date', '<', now()->toDateString());
+                      });
+                })->count();
+
+            // Security Deposits & Damages
+            $contractIds = Contract::whereIn('property_id', $propertyIds)->pluck('id')->toArray();
+            $grossDepositsCollected = Payment::whereIn('property_id', $propertyIds)
+                ->where('payment_type', 'deposit')
+                ->where('status', 'paid')
+                ->sum('amount');
+
+            $damageCharges = !empty($contractIds) ? (float) \App\Models\CheckOut::whereIn('contract_id', $contractIds)->sum('damage_charges') : 0.00;
+            $depositRefunds = !empty($contractIds) ? (float) \App\Models\CheckOut::whereIn('contract_id', $contractIds)->sum('deposit_refunded') : 0.00;
+            $depositsHeld = max(0, $grossDepositsCollected - ($damageCharges + $depositRefunds));
+
+            // Total revenue (All verified payments across rent, utilities, booking fees)
+            $totalRevenue = Payment::whereIn('property_id', $propertyIds)
                 ->where('status', 'paid')
                 ->sum('amount');
 
@@ -110,7 +159,7 @@ class DashboardController extends Controller
                 ->whereIn('status', ['pending', 'overdue'])
                 ->sum('amount');
 
-            // Total beds vs available beds (for per_bed)
+            // Capacity & Occupancy Breakdown
             $totalBeds = Bed::whereHas('room', function($q) use ($propertyIds) {
                 $q->whereIn('property_id', $propertyIds);
             })->count();
@@ -119,15 +168,19 @@ class DashboardController extends Controller
                 $q->whereIn('property_id', $propertyIds);
             })->where('status', 'available')->count();
 
-            // Count rooms without active contract (for per_room)
+            $occupiedBeds = Bed::whereHas('room', function($q) use ($propertyIds) {
+                $q->whereIn('property_id', $propertyIds);
+            })->where('status', 'occupied')->count();
+
             $totalRooms = Room::whereIn('property_id', $propertyIds)->count();
             $occupiedRooms = Contract::whereIn('property_id', $propertyIds)
                 ->whereIn('status', ['accepted', 'active'])
                 ->count();
+            $availableRooms = max(0, $totalRooms - $occupiedRooms);
 
             $occupancyRate = 0;
             if ($totalBeds > 0) {
-                $occupancyRate = round((($totalBeds - $availableBeds) / $totalBeds) * 100, 1);
+                $occupancyRate = round(($occupiedBeds / $totalBeds) * 100, 1);
             } elseif ($totalRooms > 0) {
                 $occupancyRate = round(($occupiedRooms / $totalRooms) * 100, 1);
             }
@@ -142,11 +195,22 @@ class DashboardController extends Controller
                 'total_buildings' => $totalBuildings,
                 'total_floors' => $totalFloors,
                 'occupancy_rate' => $occupancyRate,
-                'available_rooms' => Room::whereIn('property_id', $propertyIds)->where('status', 'active')->count() - $occupiedRooms,
+                'total_rooms' => $totalRooms,
+                'available_rooms' => $availableRooms,
+                'occupied_rooms' => $occupiedRooms,
+                'total_beds' => $totalBeds,
                 'available_beds' => $availableBeds,
+                'occupied_beds' => $occupiedBeds,
                 'total_tenants' => Contract::whereIn('property_id', $propertyIds)->where('status', 'active')->count(),
                 'pending_applications' => Application::whereIn('property_id', $propertyIds)->where('status', 'pending')->count(),
-                'total_revenue' => $revenue,
+                'rent_invoiced' => $rentInvoiced,
+                'rent_collected' => $rentCollected,
+                'outstanding_rent' => $outstandingRent,
+                'overdue_invoices_count' => $overdueInvoicesCount,
+                'deposits_held' => $depositsHeld,
+                'damage_deductions' => $damageCharges,
+                'deposit_refunds' => $depositRefunds,
+                'total_revenue' => $totalRevenue,
                 'outstanding_payments' => $outstanding,
                 'expiring_contracts' => Contract::whereIn('property_id', $propertyIds)
                     ->where('status', 'active')

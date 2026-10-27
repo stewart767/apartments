@@ -11,11 +11,17 @@ use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\AdminController;
-
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\PricingController;
+use App\Http\Controllers\Admin\AdminSubscriptionController;
+use App\Http\Controllers\Admin\AdminPromotionController;
+use App\Http\Controllers\Owner\SubscriptionController as OwnerSubscriptionController;
+use App\Http\Controllers\Owner\FeaturedPromotionController as OwnerFeaturedPromotionController;
 
 // 1. PUBLIC WEBSITE ROUTES
 Route::get('/', [PublicController::class, 'home'])->name('home');
+Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
+Route::post('/pricing/quote', [PricingController::class, 'quoteRequest'])->name('pricing.quote');
 
 Route::get('/about', function () {
     return view('public.about');
@@ -80,12 +86,27 @@ Route::middleware(['auth', 'role:superadmin'])->prefix('admin')->name('admin.')-
     Route::post('/amenities', [AdminController::class, 'storeAmenity'])->name('amenities.store');
     Route::delete('/amenities/{id}', [AdminController::class, 'destroyAmenity'])->name('amenities.destroy');
 
+    // SaaS Subscriptions & Promotions Management
+    Route::get('/subscriptions', [AdminSubscriptionController::class, 'index'])->name('subscriptions');
+    Route::post('/subscriptions/{id}/verify', [AdminSubscriptionController::class, 'verifyInvoice'])->name('subscriptions.verify');
+    Route::post('/subscriptions/promo', [AdminSubscriptionController::class, 'grantPromo'])->name('subscriptions.promo');
+    Route::get('/promotions', [AdminPromotionController::class, 'index'])->name('promotions');
+    Route::post('/promotions/{id}/verify', [AdminPromotionController::class, 'verify'])->name('promotions.verify');
+    Route::post('/promotions/{id}/expire', [AdminPromotionController::class, 'expire'])->name('promotions.expire');
+
     Route::get('/reports', [ReportController::class, 'adminReports'])->name('reports');
 });
 
 
 // 5. PROPERTY OWNER MIDDLEWARE ROUTE GROUP
 Route::middleware(['auth', 'role:owner,agent', 'owner.profile'])->prefix('owner')->name('owner.')->group(function () {
+    // Subscription & Plan Entitlements
+    Route::get('/subscription', [OwnerSubscriptionController::class, 'index'])->name('subscription');
+    Route::post('/subscription/subscribe', [OwnerSubscriptionController::class, 'subscribe'])->name('subscription.subscribe');
+    Route::post('/subscription/submit-payment/{id}', [OwnerSubscriptionController::class, 'submitPayment'])->name('subscription.submit-payment');
+    Route::post('/subscription/cancel', [OwnerSubscriptionController::class, 'cancel'])->name('subscription.cancel');
+    Route::post('/properties/{id}/promote', [OwnerFeaturedPromotionController::class, 'store'])->name('properties.promote');
+
     // Owner Onboarding
     Route::get('/onboarding', [App\Http\Controllers\Owner\OwnerOnboardingController::class, 'show'])->name('onboarding');
     Route::post('/onboarding/save-draft', [App\Http\Controllers\Owner\OwnerOnboardingController::class, 'saveDraft'])->name('onboarding.save-draft');
@@ -96,9 +117,9 @@ Route::middleware(['auth', 'role:owner,agent', 'owner.profile'])->prefix('owner'
     Route::get('/properties', [App\Http\Controllers\Owner\PropertyController::class, 'index'])->name('properties');
     Route::get('/properties/wizard', [App\Http\Controllers\Owner\PropertyWizardController::class, 'show'])->name('properties.wizard');
     Route::post('/properties/wizard/save-draft', [App\Http\Controllers\Owner\PropertyWizardController::class, 'saveDraft'])->name('properties.wizard.save-draft');
-    Route::post('/properties/wizard/submit', [App\Http\Controllers\Owner\PropertyWizardController::class, 'submit'])->name('properties.wizard.submit');
-    Route::get('/properties/create', [App\Http\Controllers\Owner\PropertyController::class, 'create'])->name('properties.create');
-    Route::post('/properties', [App\Http\Controllers\Owner\PropertyController::class, 'store'])->name('properties.store');
+    Route::post('/properties/wizard/submit', [App\Http\Controllers\Owner\PropertyWizardController::class, 'submit'])->name('properties.wizard.submit')->middleware('subscription.limit:property');
+    Route::get('/properties/create', [App\Http\Controllers\Owner\PropertyController::class, 'create'])->name('properties.create')->middleware('subscription.limit:property');
+    Route::post('/properties', [App\Http\Controllers\Owner\PropertyController::class, 'store'])->name('properties.store')->middleware('subscription.limit:property');
     Route::get('/properties/{id}/edit', [App\Http\Controllers\Owner\PropertyController::class, 'edit'])->name('properties.edit');
     Route::put('/properties/{id}', [App\Http\Controllers\Owner\PropertyController::class, 'update'])->name('properties.update');
     Route::delete('/properties/images/{imageId}', [App\Http\Controllers\Owner\PropertyController::class, 'deleteImage'])->name('properties.images.destroy');
@@ -109,10 +130,10 @@ Route::middleware(['auth', 'role:owner,agent', 'owner.profile'])->prefix('owner'
     Route::post('/properties/{id}/buildings', [App\Http\Controllers\Owner\PropertyDashboardController::class, 'storeBuilding'])->name('properties.buildings.store');
     Route::post('/properties/{id}/floors', [App\Http\Controllers\Owner\PropertyDashboardController::class, 'storeFloor'])->name('properties.floors.store');
     Route::get('/properties/{id}/rooms-beds', [App\Http\Controllers\Owner\PropertyDashboardController::class, 'roomsBeds'])->name('properties.rooms-beds');
-    Route::post('/properties/{id}/rooms', [App\Http\Controllers\Owner\PropertyDashboardController::class, 'storeRoom'])->name('properties.rooms.store');
-    Route::post('/properties/{id}/beds', [App\Http\Controllers\Owner\PropertyDashboardController::class, 'storeBed'])->name('properties.beds.store');
+    Route::post('/properties/{id}/rooms', [App\Http\Controllers\Owner\PropertyDashboardController::class, 'storeRoom'])->name('properties.rooms.store')->middleware('subscription.limit:unit');
+    Route::post('/properties/{id}/beds', [App\Http\Controllers\Owner\PropertyDashboardController::class, 'storeBed'])->name('properties.beds.store')->middleware('subscription.limit:unit');
     Route::get('/properties/{id}/staff', [App\Http\Controllers\Owner\PropertyDashboardController::class, 'staff'])->name('properties.staff');
-    Route::post('/properties/{id}/staff', [App\Http\Controllers\Owner\PropertyDashboardController::class, 'storeStaff'])->name('properties.staff.store');
+    Route::post('/properties/{id}/staff', [App\Http\Controllers\Owner\PropertyDashboardController::class, 'storeStaff'])->name('properties.staff.store')->middleware('subscription.limit:staff');
     Route::post('/properties/{id}/staff/{userId}/remove', [App\Http\Controllers\Owner\PropertyDashboardController::class, 'removeStaff'])->name('properties.staff.remove');
 
     // Assets routes

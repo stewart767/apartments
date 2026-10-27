@@ -631,5 +631,29 @@ class DatabaseSeeder extends Seeder
             'rental_model' => 'entire_property',
             'status' => 'active',
         ]);
+
+        $this->call(PlanSeeder::class);
+
+        // Link Owner to Organization and Seed Active Subscription
+        $ownerOrg = $owner->resolveOrganization();
+        $hostelPlan = \App\Models\Plan::where('slug', 'hostel')->first();
+        if ($hostelPlan) {
+            \App\Models\Subscription::firstOrCreate(
+                [
+                    'organization_id' => $ownerOrg->id,
+                    'plan_id' => $hostelPlan->id,
+                ],
+                [
+                    'billing_interval' => 'annual',
+                    'status' => 'active',
+                    'price' => $hostelPlan->price_annual,
+                    'currency' => 'TZS',
+                    'starts_at' => now()->subMonth(),
+                    'current_period_starts_at' => now()->subMonth(),
+                    'current_period_ends_at' => now()->addMonths(11),
+                    'notes' => 'Seeded active annual subscription for demonstration',
+                ]
+            );
+        }
     }
 }
